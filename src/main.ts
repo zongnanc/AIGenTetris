@@ -1,21 +1,30 @@
-// Entry point. For M0 this just proves the Vite + TypeScript + Canvas
-// pipeline is wired up: grab the canvas and paint its background.
-// Later milestones replace this with the real game loop.
+// Entry point. M1: set up the canvas and render the 10x20 board.
+// A few cells are pre-filled to prove the grid + rendering pipeline works;
+// the real falling pieces arrive in later milestones.
+
+import { BOARD_WIDTH, BOARD_HEIGHT } from "./constants";
+import { Board } from "./board";
+import { drawBoard } from "./render";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#board");
 if (!canvas) {
   throw new Error("Canvas #board not found");
 }
+canvas.width = BOARD_WIDTH;
+canvas.height = BOARD_HEIGHT;
 
 const ctx = canvas.getContext("2d");
 if (!ctx) {
   throw new Error("2D context unavailable");
 }
 
-ctx.fillStyle = "#14152b";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
+const board = new Board();
 
-ctx.fillStyle = "#6b6f9e";
-ctx.font = "16px system-ui, sans-serif";
-ctx.textAlign = "center";
-ctx.fillText("Ready", canvas.width / 2, canvas.height / 2);
+// Demo cells so M1 shows something on screen (one of each color along the floor).
+for (let col = 0; col < 7; col++) {
+  board.set(19, col, col + 1);
+}
+board.set(18, 0, 1);
+board.set(17, 0, 1);
+
+drawBoard(ctx, board.grid);
