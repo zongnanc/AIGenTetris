@@ -1,0 +1,19 @@
+{
+  "name": "aigentetris",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "A Claude Code generated Tetris game",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
