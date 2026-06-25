@@ -43,18 +43,6 @@ h1 {
   aspect-ratio: 1 / 2;
 }
 
-/* Stack the sidebar under the board on narrow screens. */
-@media (max-width: 520px) {
-  .layout {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .sidebar {
-    width: 300px;
-  }
-}
-
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -113,9 +101,68 @@ h1 {
   width: min(300px, 90vw);
 }
 
+/* Mobile / touch: keep the board and HUD side by side and scale the board to
+   fit the height, so the button pad stays on-screen without scrolling. This
+   block is last so it overrides the base rules above. */
 @media (pointer: coarse), (max-width: 700px) {
+  #app {
+    gap: 0.5rem;
+    padding: 0.5rem;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    justify-content: center;
+  }
+
+  h1 {
+    font-size: 1rem;
+  }
+
+  .layout {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  #board {
+    /* Shrink to leave room for the title, the HUD column, and the button pad. */
+    max-height: calc(100dvh - 12rem);
+    max-width: calc(100vw - 7rem);
+    width: auto;
+  }
+
+  .sidebar {
+    width: auto;
+    min-width: 76px;
+    gap: 0.5rem;
+  }
+
+  /* Stack the Level/Lines pair vertically in the narrow column. */
+  .row {
+    flex-direction: column;
+  }
+
+  .panel {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .panel.stat p {
+    font-size: 1.1rem;
+  }
+
+  .panel canvas {
+    width: 64px;
+  }
+
+  /* Keyboard legend is irrelevant on touch. */
+  .controls {
+    display: none;
+  }
+
   .touch-controls {
     display: grid;
+    width: min(360px, 96vw);
   }
 }
 
