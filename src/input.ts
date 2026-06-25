@@ -9,6 +9,9 @@ export interface InputActions {
   hardDrop(): void;
   rotateCW(): void;
   rotateCCW(): void;
+  hold(): void;
+  pause(): void;
+  restart(): void;
 }
 
 type RepeatDir = "left" | "right" | "down";
@@ -69,6 +72,18 @@ export function setupInput(actions: InputActions): () => void {
         break;
       case " ":
         actions.hardDrop();
+        break;
+      case "c":
+      case "C":
+        actions.hold();
+        break;
+      case "p":
+      case "P":
+        actions.pause();
+        break;
+      case "r":
+      case "R":
+        actions.restart();
         break;
       default:
         return; // let other keys through without preventDefault

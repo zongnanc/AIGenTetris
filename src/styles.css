@@ -27,8 +27,64 @@ h1 {
   text-transform: uppercase;
 }
 
+.layout {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
 #board {
   border: 2px solid #2a2c4a;
   border-radius: 4px;
   background: #14152b;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 160px;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.row .panel {
+  flex: 1;
+}
+
+.panel {
+  background: #181a33;
+  border: 1px solid #2a2c4a;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8db4;
+}
+
+.panel.stat p {
+  margin: 0;
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel canvas {
+  display: block;
+  width: 100%;
+}
+
+.controls {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: #6f72a0;
 }

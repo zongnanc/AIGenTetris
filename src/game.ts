@@ -1,6 +1,5 @@
-// Game state. M3: gravity + movement + locking.
-// The active piece falls one row per gravity step; when it can't fall it
-// locks into the grid and the next piece spawns.
+// Game state machine. M6 adds: a next-piece queue, hold, ghost projection,
+// game-over detection, pause, and restart on top of the M3–M5 mechanics.
 
 import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
@@ -12,30 +11,49 @@ import {
   spawn,
 } from "./tetromino";
 
-// Column offsets tried when a rotation would collide ("wall kick"): in place,
-// then one/two cells left or right. Enough to feel right without full SRS data.
+// Column offsets tried when a rotation would collide ("wall kick").
 const WALL_KICKS = [0, -1, 1, -2, 2];
+
+export type GameStatus = "playing" | "paused" | "over";
 
 export class Game {
   board = new Board();
-  active: ActivePiece;
+  active!: ActivePiece; // assigned via takeNext() in the constructor
+  next: PieceType;
+  hold: PieceType | null = null;
+  canHold = true;
   score = 0;
   lines = 0;
   level = START_LEVEL;
+  status: GameStatus = "playing";
 
   constructor() {
-    this.active = spawn(randomPieceType());
+    this.next = randomPieceType();
+    this.takeNext();
   }
 
-  // Replace the active piece with a freshly spawned one (random by default).
-  spawnNext(type: PieceType = randomPieceType()): ActivePiece {
+  // Make a specific piece the active piece. Sets game over if it spawns into
+  // an occupied cell. Exposed for deterministic tests.
+  spawnNext(type: PieceType): ActivePiece {
     this.active = spawn(type);
+    this.canHold = true;
+    if (this.board.collides(this.active)) {
+      this.status = "over";
+    }
     return this.active;
   }
 
-  // Try to shift the active piece. Returns false (and does nothing) if the
-  // target position collides.
+  // Pull the queued next piece into play and refill the queue.
+  private takeNext(): void {
+    const type = this.next;
+    this.next = randomPieceType();
+    this.spawnNext(type);
+  }
+
+  // Shift the active piece. Returns false (no change) on collision or when not
+  // actively playing.
   move(dRow: number, dCol: number): boolean {
+    if (this.status !== "playing") return false;
     const moved: ActivePiece = {
       ...this.active,
       row: this.active.row + dRow,
@@ -46,9 +64,9 @@ export class Game {
     return true;
   }
 
-  // Rotate the active piece (+1 CW, -1 CCW), trying small horizontal kicks if
-  // the rotated position would collide. Returns false if no kick fits.
+  // Rotate with light horizontal wall kicks.
   rotate(dir: 1 | -1): boolean {
+    if (this.status !== "playing") return false;
     const rotation = nextRotation(this.active.rotation, dir);
     for (const dCol of WALL_KICKS) {
       const candidate: ActivePiece = {
@@ -64,8 +82,18 @@ export class Game {
     return false;
   }
 
+  // Where the active piece would land if dropped straight down.
+  ghost(): ActivePiece {
+    let g = this.active;
+    while (!this.board.collides({ ...g, row: g.row + 1 })) {
+      g = { ...g, row: g.row + 1 };
+    }
+    return g;
+  }
+
   // Drop straight to the bottom and lock immediately.
   hardDrop(): void {
+    if (this.status !== "playing") return;
     while (this.move(1, 0)) {
       // fall until blocked
     }
@@ -75,13 +103,47 @@ export class Game {
   // One gravity tick: drop a row if possible, otherwise lock and spawn next.
   // Returns true if a lock happened this step.
   step(): boolean {
+    if (this.status !== "playing") return false;
     if (this.move(1, 0)) return false;
     this.lockAndNext();
     return true;
   }
 
-  // Lock the active piece, clear any completed lines, update score/level,
-  // then spawn the next piece.
+  // Swap the active piece with the held one (or stash it if hold is empty).
+  // Allowed once per piece.
+  holdPiece(): void {
+    if (this.status !== "playing" || !this.canHold) return;
+    const current = this.active.type;
+    if (this.hold === null) {
+      this.hold = current;
+      this.takeNext();
+    } else {
+      const swap = this.hold;
+      this.hold = current;
+      this.spawnNext(swap);
+    }
+    this.canHold = false;
+  }
+
+  togglePause(): void {
+    if (this.status === "playing") this.status = "paused";
+    else if (this.status === "paused") this.status = "playing";
+  }
+
+  // Start a fresh game.
+  reset(): void {
+    this.board.reset();
+    this.score = 0;
+    this.lines = 0;
+    this.level = START_LEVEL;
+    this.hold = null;
+    this.canHold = true;
+    this.status = "playing";
+    this.next = randomPieceType();
+    this.takeNext();
+  }
+
+  // Lock the active piece, clear lines, update score/level, spawn the next.
   private lockAndNext(): void {
     this.board.lock(this.active);
     const cleared = this.board.clearLines();
@@ -90,6 +152,6 @@ export class Game {
       this.lines += cleared;
       this.level = START_LEVEL + Math.floor(this.lines / LINES_PER_LEVEL);
     }
-    this.spawnNext();
+    this.takeNext();
   }
 }

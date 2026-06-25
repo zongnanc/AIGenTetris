@@ -1,33 +1,63 @@
-// Entry point. M3: a fixed-timestep gravity loop drives the game — the active
-// piece falls, stacks on the floor and other pieces, and the next piece spawns.
-// Keyboard control arrives in M4.
+// Entry point. M6: wire the full game — board + ghost + active piece on the
+// main canvas, HUD (score/level/lines, next, hold) in the sidebar, pause and
+// game-over overlays, and keyboard control including hold/pause/restart.
 
 import { BOARD_WIDTH, BOARD_HEIGHT, gravityInterval } from "./constants";
 import { Game } from "./game";
-import { drawBoard, drawPiece } from "./render";
+import {
+  drawBoard,
+  drawGhost,
+  drawOverlay,
+  drawPiece,
+  drawPreview,
+} from "./render";
 import { setupInput } from "./input";
 
-const canvas = document.querySelector<HTMLCanvasElement>("#board");
-if (!canvas) {
-  throw new Error("Canvas #board not found");
+function required<T extends Element>(selector: string): T {
+  const el = document.querySelector<T>(selector);
+  if (!el) throw new Error(`Element ${selector} not found`);
+  return el;
 }
-canvas.width = BOARD_WIDTH;
-canvas.height = BOARD_HEIGHT;
 
-const ctx = canvas.getContext("2d");
-if (!ctx) {
-  throw new Error("2D context unavailable");
+function context(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("2D context unavailable");
+  return ctx;
 }
+
+const boardCanvas = required<HTMLCanvasElement>("#board");
+boardCanvas.width = BOARD_WIDTH;
+boardCanvas.height = BOARD_HEIGHT;
+const boardCtx = context(boardCanvas);
+const nextCtx = context(required<HTMLCanvasElement>("#next"));
+const holdCtx = context(required<HTMLCanvasElement>("#hold"));
+
+const scoreEl = required<HTMLElement>("#score");
+const levelEl = required<HTMLElement>("#level");
+const linesEl = required<HTMLElement>("#lines");
 
 const game = new Game();
 
 function render(): void {
-  drawBoard(ctx!, game.board.grid);
-  drawPiece(ctx!, game.active);
+  drawBoard(boardCtx, game.board.grid);
+  if (game.status !== "over") {
+    drawGhost(boardCtx, game.ghost());
+    drawPiece(boardCtx, game.active);
+  }
+
+  scoreEl.textContent = String(game.score);
+  levelEl.textContent = String(game.level);
+  linesEl.textContent = String(game.lines);
+  drawPreview(nextCtx, game.next);
+  drawPreview(holdCtx, game.hold);
+
+  if (game.status === "paused") {
+    drawOverlay(boardCtx, "Paused", "Press P to resume");
+  } else if (game.status === "over") {
+    drawOverlay(boardCtx, "Game Over", "Press R to restart");
+  }
 }
 
-// Keyboard control. Each action re-renders immediately for responsiveness;
-// a soft drop is just a gravity step (drops, or locks at the bottom).
 setupInput({
   moveLeft: () => game.move(0, -1) && render(),
   moveRight: () => game.move(0, 1) && render(),
@@ -41,20 +71,35 @@ setupInput({
   },
   rotateCW: () => game.rotate(1) && render(),
   rotateCCW: () => game.rotate(-1) && render(),
+  hold: () => {
+    game.holdPiece();
+    render();
+  },
+  pause: () => {
+    game.togglePause();
+    render();
+  },
+  restart: () => {
+    game.reset();
+    render();
+  },
 });
 
-// Fixed-timestep gravity: accumulate elapsed time and step once per interval.
-// The interval shrinks as the level rises, so the game speeds up.
+// Fixed-timestep gravity, paused-aware. The interval shrinks with the level.
 let last = performance.now();
 let acc = 0;
 
 function loop(now: number): void {
   acc += now - last;
   last = now;
-  const interval = gravityInterval(game.level);
-  while (acc >= interval) {
-    game.step();
-    acc -= interval;
+  if (game.status === "playing") {
+    const interval = gravityInterval(game.level);
+    while (acc >= interval) {
+      game.step();
+      acc -= interval;
+    }
+  } else {
+    acc = 0; // don't bank time while paused or game over
   }
   render();
   requestAnimationFrame(loop);
