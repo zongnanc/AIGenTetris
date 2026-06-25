@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   SHAPES,
   PIECE_TYPES,
+  BagRandomizer,
   cellsOf,
   colorOf,
   nextRotation,
@@ -73,6 +74,36 @@ describe("rotation index", () => {
       seen.push(r);
     }
     expect(seen).toEqual([0, 3, 2, 1, 0]);
+  });
+});
+
+describe("BagRandomizer", () => {
+  it("yields all 7 piece types in the first 7 draws", () => {
+    const bag = new BagRandomizer();
+    const drawn = new Set<PieceType>();
+    for (let i = 0; i < 7; i++) drawn.add(bag.next());
+    expect(drawn.size).toBe(7);
+    expect([...drawn].sort()).toEqual([...PIECE_TYPES].sort());
+  });
+
+  it("yields all 7 piece types in the second bag of 7 draws", () => {
+    const bag = new BagRandomizer();
+    for (let i = 0; i < 7; i++) bag.next(); // exhaust the first bag
+    const drawn = new Set<PieceType>();
+    for (let i = 0; i < 7; i++) drawn.add(bag.next());
+    expect(drawn.size).toBe(7);
+  });
+
+  it("never produces more than 12 pieces between any two occurrences of the same type", () => {
+    const bag = new BagRandomizer();
+    const lastSeen = new Map<PieceType, number>();
+    for (let i = 0; i < 100; i++) {
+      const piece = bag.next();
+      if (lastSeen.has(piece)) {
+        expect(i - lastSeen.get(piece)!).toBeLessThanOrEqual(12);
+      }
+      lastSeen.set(piece, i);
+    }
   });
 });
 
