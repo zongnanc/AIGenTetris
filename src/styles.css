@@ -183,7 +183,11 @@ h1 {
 }
 
 .tbtn[data-action="pause"],
-.tbtn[data-action="restart"],
-#btn-mute {
+.tbtn[data-action="restart"] {
   font-size: 0.95rem;
+}
+
+/* Center the hard-drop button under the directional row (row 3, middle). */
+.tbtn-hard {
+  grid-column: 2;
 }

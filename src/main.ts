@@ -125,13 +125,6 @@ const actions: InputActions = {
 setupInput(actions);
 setupTouchControls(actions);
 
-// Mute button doubles as the on-screen sound indicator.
-const muteBtn = document.querySelector<HTMLElement>("#btn-mute");
-muteBtn?.addEventListener("pointerdown", (e) => {
-  e.preventDefault();
-  muteBtn.textContent = sound.toggle() ? "🔊" : "🔇";
-});
-
 // Fixed-timestep gravity, paused-aware. The interval shrinks with the level.
 let last = performance.now();
 let acc = 0;
