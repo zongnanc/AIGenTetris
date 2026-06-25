@@ -113,3 +113,33 @@ export function setupInput(actions: InputActions): () => void {
     stopRepeat();
   };
 }
+
+// Wire on-screen buttons (any element with a [data-action]) to game actions,
+// for touch devices. Uses pointerdown so it responds immediately and works for
+// both touch and mouse; the first tap also unlocks audio on mobile.
+export function setupTouchControls(actions: InputActions): () => void {
+  const map: Record<string, (() => void) | undefined> = {
+    left: actions.moveLeft,
+    right: actions.moveRight,
+    rotate: actions.rotateCW,
+    soft: actions.softDrop,
+    hard: actions.hardDrop,
+    hold: actions.hold,
+    pause: actions.pause,
+    restart: actions.restart,
+  };
+
+  const cleanups: Array<() => void> = [];
+  document.querySelectorAll<HTMLElement>("[data-action]").forEach((btn) => {
+    const fn = map[btn.dataset.action ?? ""];
+    if (!fn) return;
+    const handler = (e: Event) => {
+      e.preventDefault(); // avoid double-tap zoom and the synthetic click
+      fn();
+    };
+    btn.addEventListener("pointerdown", handler);
+    cleanups.push(() => btn.removeEventListener("pointerdown", handler));
+  });
+
+  return () => cleanups.forEach((cleanup) => cleanup());
+}
