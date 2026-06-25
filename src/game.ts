@@ -3,6 +3,7 @@
 // locks into the grid and the next piece spawns.
 
 import { Board } from "./board";
+import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
   ActivePiece,
   PieceType,
@@ -18,6 +19,9 @@ const WALL_KICKS = [0, -1, 1, -2, 2];
 export class Game {
   board = new Board();
   active: ActivePiece;
+  score = 0;
+  lines = 0;
+  level = START_LEVEL;
 
   constructor() {
     this.active = spawn(randomPieceType());
@@ -65,16 +69,27 @@ export class Game {
     while (this.move(1, 0)) {
       // fall until blocked
     }
-    this.board.lock(this.active);
-    this.spawnNext();
+    this.lockAndNext();
   }
 
   // One gravity tick: drop a row if possible, otherwise lock and spawn next.
   // Returns true if a lock happened this step.
   step(): boolean {
     if (this.move(1, 0)) return false;
-    this.board.lock(this.active);
-    this.spawnNext();
+    this.lockAndNext();
     return true;
+  }
+
+  // Lock the active piece, clear any completed lines, update score/level,
+  // then spawn the next piece.
+  private lockAndNext(): void {
+    this.board.lock(this.active);
+    const cleared = this.board.clearLines();
+    if (cleared > 0) {
+      this.score += LINE_SCORES[cleared] * this.level;
+      this.lines += cleared;
+      this.level = START_LEVEL + Math.floor(this.lines / LINES_PER_LEVEL);
+    }
+    this.spawnNext();
   }
 }

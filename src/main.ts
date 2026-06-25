@@ -2,7 +2,7 @@
 // piece falls, stacks on the floor and other pieces, and the next piece spawns.
 // Keyboard control arrives in M4.
 
-import { BOARD_WIDTH, BOARD_HEIGHT } from "./constants";
+import { BOARD_WIDTH, BOARD_HEIGHT, gravityInterval } from "./constants";
 import { Game } from "./game";
 import { drawBoard, drawPiece } from "./render";
 import { setupInput } from "./input";
@@ -43,18 +43,18 @@ setupInput({
   rotateCCW: () => game.rotate(-1) && render(),
 });
 
-// Fixed-timestep gravity: accumulate elapsed time and step once per interval,
-// independent of the display's frame rate.
-const DROP_MS = 500;
+// Fixed-timestep gravity: accumulate elapsed time and step once per interval.
+// The interval shrinks as the level rises, so the game speeds up.
 let last = performance.now();
 let acc = 0;
 
 function loop(now: number): void {
   acc += now - last;
   last = now;
-  while (acc >= DROP_MS) {
+  const interval = gravityInterval(game.level);
+  while (acc >= interval) {
     game.step();
-    acc -= DROP_MS;
+    acc -= interval;
   }
   render();
   requestAnimationFrame(loop);

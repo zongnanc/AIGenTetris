@@ -86,6 +86,41 @@ describe("collision", () => {
   });
 });
 
+describe("clearLines", () => {
+  function fillRow(board: Board, row: number): void {
+    for (let col = 0; col < COLS; col++) board.set(row, col, 1);
+  }
+
+  it("returns 0 when no row is full", () => {
+    const board = new Board();
+    board.set(19, 0, 1); // partial row
+    expect(board.clearLines()).toBe(0);
+  });
+
+  it("clears a single full row", () => {
+    const board = new Board();
+    fillRow(board, 19);
+    expect(board.clearLines()).toBe(1);
+    expect(board.grid.flat().every((v) => v === EMPTY)).toBe(true);
+  });
+
+  it("clears multiple full rows at once", () => {
+    const board = new Board();
+    fillRow(board, 18);
+    fillRow(board, 19);
+    expect(board.clearLines()).toBe(2);
+  });
+
+  it("drops the rows above a cleared line down by one", () => {
+    const board = new Board();
+    board.set(5, 3, 7); // a lone block well above
+    fillRow(board, 19);
+    expect(board.clearLines()).toBe(1);
+    expect(board.get(5, 3)).toBe(EMPTY);
+    expect(board.get(6, 3)).toBe(7); // shifted down one row
+  });
+});
+
 describe("lock", () => {
   it("stamps the piece color into the grid", () => {
     const board = new Board();
