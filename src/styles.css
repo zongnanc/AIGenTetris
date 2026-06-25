@@ -104,3 +104,39 @@ h1 {
   line-height: 1.6;
   color: #6f72a0;
 }
+
+/* On-screen touch buttons: hidden on desktop, shown on touch or narrow screens. */
+.touch-controls {
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  width: min(300px, 90vw);
+}
+
+@media (pointer: coarse), (max-width: 700px) {
+  .touch-controls {
+    display: grid;
+  }
+}
+
+.tbtn {
+  font-size: 1.3rem;
+  padding: 0.85rem 0;
+  color: #e6e6f0;
+  background: #181a33;
+  border: 1px solid #2a2c4a;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.tbtn:active {
+  background: #23254a;
+}
+
+.tbtn[data-action="pause"],
+.tbtn[data-action="restart"],
+#btn-mute {
+  font-size: 0.95rem;
+}

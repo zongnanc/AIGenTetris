@@ -11,7 +11,7 @@ import {
   drawPiece,
   drawPreview,
 } from "./render";
-import { setupInput } from "./input";
+import { InputActions, setupInput, setupTouchControls } from "./input";
 import { SoundFX } from "./sound";
 
 function required<T extends Element>(selector: string): T {
@@ -68,7 +68,9 @@ function render(): void {
   }
 }
 
-setupInput({
+// Shared action handlers, driven by both the keyboard and the on-screen
+// touch buttons.
+const actions: InputActions = {
   moveLeft: () => {
     if (game.move(0, -1)) {
       sound.move();
@@ -118,6 +120,16 @@ setupInput({
     render();
   },
   mute: () => sound.toggle(),
+};
+
+setupInput(actions);
+setupTouchControls(actions);
+
+// Mute button doubles as the on-screen sound indicator.
+const muteBtn = document.querySelector<HTMLElement>("#btn-mute");
+muteBtn?.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  muteBtn.textContent = sound.toggle() ? "🔊" : "🔇";
 });
 
 // Fixed-timestep gravity, paused-aware. The interval shrinks with the level.
