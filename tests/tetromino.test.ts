@@ -100,7 +100,9 @@ describe("BagRandomizer", () => {
     for (let i = 0; i < 100; i++) {
       const piece = bag.next();
       if (lastSeen.has(piece)) {
-        expect(i - lastSeen.get(piece)!).toBeLessThanOrEqual(12);
+        // Pieces strictly between the two occurrences: worst case is a type
+        // appearing first in one bag and last in the next (6 + 6 = 12).
+        expect(i - lastSeen.get(piece)! - 1).toBeLessThanOrEqual(12);
       }
       lastSeen.set(piece, i);
     }
