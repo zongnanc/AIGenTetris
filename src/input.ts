@@ -12,6 +12,7 @@ export interface InputActions {
   hold(): void;
   pause(): void;
   restart(): void;
+  mute(): void;
 }
 
 type RepeatDir = "left" | "right" | "down";
@@ -84,6 +85,10 @@ export function setupInput(actions: InputActions): () => void {
       case "r":
       case "R":
         actions.restart();
+        break;
+      case "m":
+      case "M":
+        actions.mute();
         break;
       default:
         return; // let other keys through without preventDefault

@@ -12,6 +12,7 @@ import {
   drawPreview,
 } from "./render";
 import { setupInput } from "./input";
+import { SoundFX } from "./sound";
 
 function required<T extends Element>(selector: string): T {
   const el = document.querySelector<T>(selector);
@@ -37,6 +38,15 @@ const levelEl = required<HTMLElement>("#level");
 const linesEl = required<HTMLElement>("#lines");
 
 const game = new Game();
+const sound = new SoundFX();
+
+// Game-driven sounds (locking, line clears, game over) come through events so
+// game.ts stays free of audio. Input-driven sounds are played in the handlers.
+game.events = {
+  onLock: () => sound.lock(),
+  onLineClear: (lines) => sound.lineClear(lines),
+  onGameOver: () => sound.gameOver(),
+};
 
 function render(): void {
   drawBoard(boardCtx, game.board.grid);
@@ -59,21 +69,45 @@ function render(): void {
 }
 
 setupInput({
-  moveLeft: () => game.move(0, -1) && render(),
-  moveRight: () => game.move(0, 1) && render(),
+  moveLeft: () => {
+    if (game.move(0, -1)) {
+      sound.move();
+      render();
+    }
+  },
+  moveRight: () => {
+    if (game.move(0, 1)) {
+      sound.move();
+      render();
+    }
+  },
   softDrop: () => {
     game.step();
     render();
   },
   hardDrop: () => {
-    game.hardDrop();
-    render();
+    if (game.hardDrop()) {
+      sound.hardDrop();
+      render();
+    }
   },
-  rotateCW: () => game.rotate(1) && render(),
-  rotateCCW: () => game.rotate(-1) && render(),
+  rotateCW: () => {
+    if (game.rotate(1)) {
+      sound.rotate();
+      render();
+    }
+  },
+  rotateCCW: () => {
+    if (game.rotate(-1)) {
+      sound.rotate();
+      render();
+    }
+  },
   hold: () => {
-    game.holdPiece();
-    render();
+    if (game.holdPiece()) {
+      sound.hold();
+      render();
+    }
   },
   pause: () => {
     game.togglePause();
@@ -83,6 +117,7 @@ setupInput({
     game.reset();
     render();
   },
+  mute: () => sound.toggle(),
 });
 
 // Fixed-timestep gravity, paused-aware. The interval shrinks with the level.
