@@ -24,3 +24,15 @@ export const COLORS: readonly string[] = [
 ];
 
 export const GRID_LINE = "#23254a";
+
+// Scoring & progression.
+// Points for clearing N lines at once (index = N), multiplied by the level.
+export const LINE_SCORES = [0, 100, 300, 500, 800];
+export const LINES_PER_LEVEL = 10;
+export const START_LEVEL = 1;
+
+// Gravity speed (milliseconds per row) for a given level: faster as you climb,
+// with a 100ms floor so it stays playable.
+export function gravityInterval(level: number): number {
+  return Math.max(100, 800 - (level - START_LEVEL) * 70);
+}

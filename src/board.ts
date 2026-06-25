@@ -57,4 +57,19 @@ export class Board {
       }
     }
   }
+
+  // Remove every fully-filled row, dropping the rows above down to fill the
+  // gap. Returns how many rows were cleared.
+  clearLines(): number {
+    let cleared = 0;
+    for (let row = ROWS - 1; row >= 0; row--) {
+      if (this.grid[row].every((cell) => cell !== EMPTY)) {
+        this.grid.splice(row, 1);
+        this.grid.unshift(new Array<number>(COLS).fill(EMPTY));
+        cleared++;
+        row++; // re-check this index now that rows shifted down
+      }
+    }
+    return cleared;
+  }
 }

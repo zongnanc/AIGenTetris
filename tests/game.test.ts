@@ -1,10 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { Game } from "../src/game";
-import { EMPTY } from "../src/constants";
+import { COLS, EMPTY } from "../src/constants";
 import { cellsOf, colorOf } from "../src/tetromino";
 
 // Generous upper bound on gravity steps to reach the floor.
 const ROWS_GUARD = 40;
+
+// Fill a row on the game's board leaving the given columns empty.
+function fillRowExcept(game: Game, row: number, empties: number[]): void {
+  for (let col = 0; col < COLS; col++) {
+    if (!empties.includes(col)) game.board.set(row, col, 1);
+  }
+}
 
 describe("game movement + gravity", () => {
   it("move shifts the active piece when there is room", () => {
@@ -56,5 +63,27 @@ describe("rotation + hard drop", () => {
     // O should rest on the floor (bottom two rows).
     expect(game.board.get(19, 4)).toBe(colorOf("O"));
     expect(game.board.get(18, 5)).toBe(colorOf("O"));
+  });
+});
+
+describe("scoring + levels", () => {
+  it("scores a single line clear (100 x level)", () => {
+    const game = new Game();
+    fillRowExcept(game, 19, [4, 5]); // gap matches an O
+    game.spawnNext("O");
+    game.hardDrop(); // completes row 19
+    expect(game.lines).toBe(1);
+    expect(game.score).toBe(100);
+    expect(game.level).toBe(1);
+  });
+
+  it("scores a double line clear (300 x level)", () => {
+    const game = new Game();
+    fillRowExcept(game, 18, [4, 5]);
+    fillRowExcept(game, 19, [4, 5]);
+    game.spawnNext("O");
+    game.hardDrop(); // O fills the 4,5 gap on both rows
+    expect(game.lines).toBe(2);
+    expect(game.score).toBe(300);
   });
 });
