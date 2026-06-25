@@ -120,9 +120,21 @@ export function nextRotation(rotation: Rotation, dir: 1 | -1): Rotation {
   return (((rotation + dir) % 4) + 4) % 4 as Rotation;
 }
 
-export function randomPieceType(): PieceType {
-  const i = Math.floor(Math.random() * PIECE_TYPES.length);
-  return PIECE_TYPES[i];
+// 7-bag randomizer: shuffles all 7 piece types into a bag and deals them one
+// at a time; refills when empty, guaranteeing each piece appears once per bag.
+export class BagRandomizer {
+  private bag: PieceType[] = [];
+
+  next(): PieceType {
+    if (this.bag.length === 0) {
+      this.bag = [...PIECE_TYPES];
+      for (let i = this.bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]];
+      }
+    }
+    return this.bag.pop()!;
+  }
 }
 
 // Spawn at the top, horizontally centered (columns 3..6 for the 4-wide box).

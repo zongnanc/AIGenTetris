@@ -5,9 +5,9 @@ import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
   ActivePiece,
+  BagRandomizer,
   PieceType,
   nextRotation,
-  randomPieceType,
   spawn,
 } from "./tetromino";
 
@@ -26,9 +26,10 @@ export class Game {
   lines = 0;
   level = START_LEVEL;
   status: GameStatus = "playing";
+  private bag = new BagRandomizer();
 
   constructor() {
-    this.next = randomPieceType();
+    this.next = this.bag.next();
     this.takeNext();
   }
 
@@ -46,7 +47,7 @@ export class Game {
   // Pull the queued next piece into play and refill the queue.
   private takeNext(): void {
     const type = this.next;
-    this.next = randomPieceType();
+    this.next = this.bag.next();
     this.spawnNext(type);
   }
 
@@ -139,7 +140,8 @@ export class Game {
     this.hold = null;
     this.canHold = true;
     this.status = "playing";
-    this.next = randomPieceType();
+    this.bag = new BagRandomizer();
+    this.next = this.bag.next();
     this.takeNext();
   }
 
