@@ -1,10 +1,10 @@
-// Entry point. M1: set up the canvas and render the 10x20 board.
-// A few cells are pre-filled to prove the grid + rendering pipeline works;
-// the real falling pieces arrive in later milestones.
+// Entry point. M2: render the board plus a randomly spawned piece at the top.
+// Click the canvas to spawn another random piece (temporary demo hook;
+// real keyboard control arrives in M4).
 
 import { BOARD_WIDTH, BOARD_HEIGHT } from "./constants";
-import { Board } from "./board";
-import { drawBoard } from "./render";
+import { Game } from "./game";
+import { drawBoard, drawPiece } from "./render";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#board");
 if (!canvas) {
@@ -18,13 +18,16 @@ if (!ctx) {
   throw new Error("2D context unavailable");
 }
 
-const board = new Board();
+const game = new Game();
 
-// Demo cells so M1 shows something on screen (one of each color along the floor).
-for (let col = 0; col < 7; col++) {
-  board.set(19, col, col + 1);
+function render(): void {
+  drawBoard(ctx!, game.board.grid);
+  drawPiece(ctx!, game.active);
 }
-board.set(18, 0, 1);
-board.set(17, 0, 1);
 
-drawBoard(ctx, board.grid);
+canvas.addEventListener("click", () => {
+  game.spawnNext();
+  render();
+});
+
+render();

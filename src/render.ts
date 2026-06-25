@@ -2,6 +2,7 @@
 
 import { CELL, COLS, ROWS, COLORS, EMPTY, GRID_LINE } from "./constants";
 import type { Grid } from "./board";
+import { ActivePiece, cellsOf, colorOf } from "./tetromino";
 
 export function drawBoard(ctx: CanvasRenderingContext2D, grid: Grid): void {
   // Background.
@@ -35,6 +36,15 @@ export function drawCell(
   ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
   ctx.lineWidth = 2;
   ctx.strokeRect(x + 1, y + 1, CELL - 2, CELL - 2);
+}
+
+export function drawPiece(ctx: CanvasRenderingContext2D, piece: ActivePiece): void {
+  const color = COLORS[colorOf(piece.type)];
+  for (const [row, col] of cellsOf(piece)) {
+    if (row >= 0) {
+      drawCell(ctx, row, col, color);
+    }
+  }
 }
 
 function drawGridLines(ctx: CanvasRenderingContext2D): void {
