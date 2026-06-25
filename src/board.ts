@@ -2,6 +2,7 @@
 // so it stays unit-testable. Rendering lives in render.ts.
 
 import { COLS, ROWS, EMPTY } from "./constants";
+import { ActivePiece, cellsOf, colorOf } from "./tetromino";
 
 // grid[row][col]; row 0 is the top of the well.
 export type Grid = number[][];
@@ -33,5 +34,27 @@ export class Board {
 
   reset(): void {
     this.grid = createEmptyGrid();
+  }
+
+  // True if the piece overlaps a wall, the floor, or a filled cell.
+  // Cells above the top of the well (row < 0) are allowed so pieces can
+  // spawn and rotate at the ceiling.
+  collides(piece: ActivePiece): boolean {
+    for (const [row, col] of cellsOf(piece)) {
+      if (col < 0 || col >= COLS) return true; // side walls
+      if (row >= ROWS) return true; // floor
+      if (row >= 0 && this.grid[row][col] !== EMPTY) return true; // stack
+    }
+    return false;
+  }
+
+  // Stamp the piece's cells into the grid using its color.
+  lock(piece: ActivePiece): void {
+    const color = colorOf(piece.type);
+    for (const [row, col] of cellsOf(piece)) {
+      if (inBounds(row, col)) {
+        this.grid[row][col] = color;
+      }
+    }
   }
 }
