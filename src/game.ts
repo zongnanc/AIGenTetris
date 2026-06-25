@@ -16,6 +16,14 @@ const WALL_KICKS = [0, -1, 1, -2, 2];
 
 export type GameStatus = "playing" | "paused" | "over";
 
+// Optional hooks so callers (e.g. sound) can react to game events without the
+// game depending on the DOM or audio. Defaults to no-ops.
+export interface GameEvents {
+  onLock?: () => void;
+  onLineClear?: (lines: number) => void;
+  onGameOver?: () => void;
+}
+
 export class Game {
   board = new Board();
   active!: ActivePiece; // assigned via takeNext() in the constructor
@@ -26,6 +34,7 @@ export class Game {
   lines = 0;
   level = START_LEVEL;
   status: GameStatus = "playing";
+  events: GameEvents = {};
   private bag = new BagRandomizer();
 
   constructor() {
@@ -40,6 +49,7 @@ export class Game {
     this.canHold = true;
     if (this.board.collides(this.active)) {
       this.status = "over";
+      this.events.onGameOver?.();
     }
     return this.active;
   }
@@ -92,13 +102,15 @@ export class Game {
     return g;
   }
 
-  // Drop straight to the bottom and lock immediately.
-  hardDrop(): void {
-    if (this.status !== "playing") return;
+  // Drop straight to the bottom and lock immediately. Returns false if the
+  // game isn't actively playing (nothing happened).
+  hardDrop(): boolean {
+    if (this.status !== "playing") return false;
     while (this.move(1, 0)) {
       // fall until blocked
     }
     this.lockAndNext();
+    return true;
   }
 
   // One gravity tick: drop a row if possible, otherwise lock and spawn next.
@@ -111,9 +123,9 @@ export class Game {
   }
 
   // Swap the active piece with the held one (or stash it if hold is empty).
-  // Allowed once per piece.
-  holdPiece(): void {
-    if (this.status !== "playing" || !this.canHold) return;
+  // Allowed once per piece. Returns false if the hold was rejected.
+  holdPiece(): boolean {
+    if (this.status !== "playing" || !this.canHold) return false;
     const current = this.active.type;
     if (this.hold === null) {
       this.hold = current;
@@ -124,6 +136,7 @@ export class Game {
       this.spawnNext(swap);
     }
     this.canHold = false;
+    return true;
   }
 
   togglePause(): void {
@@ -148,11 +161,13 @@ export class Game {
   // Lock the active piece, clear lines, update score/level, spawn the next.
   private lockAndNext(): void {
     this.board.lock(this.active);
+    this.events.onLock?.();
     const cleared = this.board.clearLines();
     if (cleared > 0) {
       this.score += LINE_SCORES[cleared] * this.level;
       this.lines += cleared;
       this.level = START_LEVEL + Math.floor(this.lines / LINES_PER_LEVEL);
+      this.events.onLineClear?.(cleared);
     }
     this.takeNext();
   }
