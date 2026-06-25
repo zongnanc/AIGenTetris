@@ -87,3 +87,55 @@ describe("scoring + levels", () => {
     expect(game.score).toBe(300);
   });
 });
+
+describe("game states", () => {
+  it("ends the game when a piece spawns into filled cells", () => {
+    const game = new Game();
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < COLS; c++) game.board.set(r, c, 1);
+    }
+    game.spawnNext("O"); // spawns into the filled top -> game over
+    expect(game.status).toBe("over");
+    expect(game.step()).toBe(false); // no further play
+  });
+
+  it("toggles pause and blocks movement while paused", () => {
+    const game = new Game();
+    game.spawnNext("O");
+    game.togglePause();
+    expect(game.status).toBe("paused");
+    expect(game.move(0, 1)).toBe(false);
+    game.togglePause();
+    expect(game.status).toBe("playing");
+  });
+
+  it("holds a piece, then blocks a second hold until the next piece", () => {
+    const game = new Game();
+    game.spawnNext("T");
+    game.holdPiece();
+    expect(game.hold).toBe("T");
+    expect(game.canHold).toBe(false);
+    game.holdPiece(); // ignored
+    expect(game.hold).toBe("T");
+  });
+
+  it("reset restores a fresh game", () => {
+    const game = new Game();
+    game.hardDrop();
+    game.togglePause();
+    game.reset();
+    expect(game.score).toBe(0);
+    expect(game.lines).toBe(0);
+    expect(game.level).toBe(1);
+    expect(game.status).toBe("playing");
+    expect(game.hold).toBeNull();
+  });
+
+  it("ghost projects the piece down to its landing row", () => {
+    const game = new Game();
+    game.spawnNext("O"); // O bottom cells rest on row 19 -> ghost top at 18
+    const ghost = game.ghost();
+    expect(ghost.col).toBe(game.active.col);
+    expect(ghost.row).toBe(18);
+  });
+});
