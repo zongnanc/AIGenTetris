@@ -5,6 +5,7 @@ import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
   GRAB_HOLD_TIME,
+  LOCK_DELAY,
   SOFT_DROP_VELOCITY,
   gravityScaleForLevel,
   nextVelocity,
@@ -50,6 +51,8 @@ export class Game {
   // The claw holds a freshly spawned piece for a moment before releasing it.
   grabbed = false;
   grabTimer = 0;
+  // Time a resting piece has sat flush against the floor/stack before locking.
+  lockTimer = 0;
   private bag = new BagRandomizer();
 
   constructor() {
@@ -65,6 +68,7 @@ export class Game {
     this.velocity = 0; // a new piece starts at rest
     this.grabbed = this.physics; // the claw grabs the new piece in physics mode
     this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
+    this.lockTimer = 0;
     this.canHold = true;
     if (this.board.collides(this.active)) {
       this.status = "over";
@@ -169,14 +173,23 @@ export class Game {
       dt,
     );
     this.offset += this.velocity * dt;
-    while (this.offset >= 1) {
-      if (this.move(1, 0)) {
-        this.offset -= 1;
-      } else {
+
+    // Drop whole rows while the sub-cell offset crosses cell boundaries.
+    while (this.offset >= 1 && this.move(1, 0)) {
+      this.offset -= 1;
+    }
+
+    if (this.board.collides({ ...this.active, row: this.active.row + 1 })) {
+      // Resting on the floor or stack: sit flush (offset 0, no sub-cell overlap
+      // or breaching) and lock after a short delay so the piece can still be
+      // nudged at the last moment.
+      this.offset = 0;
+      this.lockTimer += dt;
+      if (this.lockTimer >= LOCK_DELAY) {
         this.lockAndNext();
-        this.offset = 0;
-        break;
       }
+    } else {
+      this.lockTimer = 0;
     }
   }
 
@@ -196,6 +209,7 @@ export class Game {
     this.velocity = 0;
     this.grabbed = this.physics; // claw grabs the current piece when entering physics
     this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
+    this.lockTimer = 0;
   }
 
   // Swap the active piece with the held one (or stash it if hold is empty).

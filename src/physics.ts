@@ -17,6 +17,7 @@ export const DRAG = 2.2; // air resistance per unit width
 export const MAX_VELOCITY = 40; // rows / s safety cap
 export const SOFT_DROP_VELOCITY = 25; // rows / s floor applied on soft drop
 export const GRAB_HOLD_TIME = 0.3; // seconds the claw holds a new piece before release
+export const LOCK_DELAY = 0.2; // seconds a resting piece sits flush before locking
 
 // Distinct columns the piece spans in its current rotation. Wider = more drag.
 export function pieceWidth(piece: ActivePiece): number {
