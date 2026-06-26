@@ -4,6 +4,7 @@ import {
   nextVelocity,
   gravityScaleForLevel,
   grabHoldForLevel,
+  dragForLevel,
   GRAVITY,
   DRAG,
   MAX_VELOCITY,
@@ -73,5 +74,27 @@ describe("grabHoldForLevel", () => {
 
   it("never drops below the floor", () => {
     expect(grabHoldForLevel(100)).toBeCloseTo(GRAB_HOLD_MIN, 5);
+  });
+});
+
+describe("dragForLevel", () => {
+  it("is highest at the start (gentle) and eases off with level", () => {
+    expect(dragForLevel(1)).toBeGreaterThan(dragForLevel(4));
+    expect(dragForLevel(1)).toBeGreaterThan(DRAG);
+  });
+
+  it("settles at the base drag once the beginner bonus is gone", () => {
+    expect(dragForLevel(50)).toBeCloseTo(DRAG, 5);
+  });
+
+  it("gives a lower terminal velocity at level 1 than at a high level", () => {
+    const terminal = (level: number) => {
+      const scale = gravityScaleForLevel(level);
+      const drag = dragForLevel(level);
+      let v = 0;
+      for (let i = 0; i < 3000; i++) v = nextVelocity(v, 1, scale, 0.01, drag);
+      return v;
+    };
+    expect(terminal(1)).toBeLessThan(terminal(6));
   });
 });
