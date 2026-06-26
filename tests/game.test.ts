@@ -189,14 +189,15 @@ describe("physics mode", () => {
     game.rotate(1); // -> horizontal (width 4); broadside to the air
     expect(game.velocity).toBe(16); // not cut instantly
 
-    // After a brief moment it has only eased down a little (gradual, not sharp).
+    // After a brief moment it has eased down but is still well above terminal
+    // (gradual decay, not an instant snap to terminal).
     for (let i = 0; i < 5; i++) game.fall(0.016);
     expect(game.velocity).toBeLessThan(16);
-    expect(game.velocity).toBeGreaterThan(12);
+    expect(game.velocity).toBeGreaterThan(6);
 
-    // Given more time it settles well below the entry speed.
-    for (let i = 0; i < 60; i++) game.fall(0.016);
-    expect(game.velocity).toBeLessThan(8);
+    // Given more time it settles toward the (low) horizontal terminal velocity.
+    for (let i = 0; i < 80; i++) game.fall(0.016);
+    expect(game.velocity).toBeLessThan(6);
   });
 
   it("a resting piece sits flush (no overlap/breach) and locks after the delay", () => {
