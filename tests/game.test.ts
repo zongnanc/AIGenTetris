@@ -179,7 +179,7 @@ describe("physics mode", () => {
     expect(game.velocity).toBeGreaterThan(0);
   });
 
-  it("rotating broadside slows the piece gradually via drag, not instantly", () => {
+  it("rotating broadside slows the piece gradually, not sharply", () => {
     const game = new Game();
     game.togglePhysics();
     game.spawnNext("I"); // rotation 0 = horizontal (width 4)
@@ -189,8 +189,13 @@ describe("physics mode", () => {
     game.rotate(1); // -> horizontal (width 4); broadside to the air
     expect(game.velocity).toBe(16); // not cut instantly
 
-    // A handful of frames of drag brake it well below the entry speed.
-    for (let i = 0; i < 10; i++) game.fall(0.016);
+    // After a brief moment it has only eased down a little (gradual, not sharp).
+    for (let i = 0; i < 5; i++) game.fall(0.016);
+    expect(game.velocity).toBeLessThan(16);
+    expect(game.velocity).toBeGreaterThan(12);
+
+    // Given more time it settles well below the entry speed.
+    for (let i = 0; i < 60; i++) game.fall(0.016);
     expect(game.velocity).toBeLessThan(8);
   });
 

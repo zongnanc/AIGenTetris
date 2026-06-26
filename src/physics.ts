@@ -17,6 +17,7 @@ export const DRAG = 2.2; // base air resistance per unit width (used at high lev
 export const BEGINNER_DRAG = 2.6; // extra "thick air" drag at the starting level
 export const DRAG_FALLOFF = 0.5; // how fast the beginner drag thins out per level
 export const MAX_VELOCITY = 40; // rows / s safety cap
+export const MAX_DECEL = 14; // rows / s^2 cap on braking, so slowdowns stay gradual
 export const SOFT_DROP_VELOCITY = 25; // rows / s floor applied on soft drop
 export const GRAB_HOLD_BASE = 0.5; // claw hold at the starting level (seconds)
 export const GRAB_HOLD_MIN = 0.1; // shortest hold at high levels (seconds)
@@ -55,7 +56,10 @@ export function nextVelocity(
   dt: number,
   drag = DRAG,
 ): number {
-  const accel = GRAVITY * gravityScale - drag * width * v;
+  let accel = GRAVITY * gravityScale - drag * width * v;
+  // Cap braking force so over-speed (e.g. after rotating broadside) bleeds off
+  // gradually at a steady rate rather than snapping down to terminal velocity.
+  if (accel < -MAX_DECEL) accel = -MAX_DECEL;
   const next = v + accel * dt;
   return Math.min(Math.max(next, 0), MAX_VELOCITY);
 }

@@ -8,6 +8,7 @@ import {
   GRAVITY,
   DRAG,
   MAX_VELOCITY,
+  MAX_DECEL,
   GRAB_HOLD_MIN,
 } from "../src/physics";
 import type { ActivePiece, PieceType, Rotation } from "../src/tetromino";
@@ -53,6 +54,13 @@ describe("nextVelocity", () => {
 
   it("never exceeds MAX_VELOCITY", () => {
     expect(nextVelocity(MAX_VELOCITY, 1, 5, 1)).toBeLessThanOrEqual(MAX_VELOCITY);
+  });
+
+  it("caps deceleration so braking is gradual", () => {
+    // Far above terminal (width 4): the drop is limited to MAX_DECEL * dt.
+    const before = 20;
+    const after = nextVelocity(before, 4, 1, 0.1);
+    expect(before - after).toBeCloseTo(MAX_DECEL * 0.1, 5);
   });
 
   it("clamps at zero — no upward drift", () => {
