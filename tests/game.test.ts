@@ -139,3 +139,42 @@ describe("game states", () => {
     expect(ghost.row).toBe(18);
   });
 });
+
+describe("physics mode", () => {
+  function filledCount(game: Game): number {
+    return game.board.grid.flat().filter((v) => v !== EMPTY).length;
+  }
+
+  it("toggles physics and resets the fall state", () => {
+    const game = new Game();
+    game.velocity = 5;
+    game.offset = 0.5;
+    game.togglePhysics();
+    expect(game.physics).toBe(true);
+    expect(game.velocity).toBe(0);
+    expect(game.offset).toBe(0);
+  });
+
+  it("fall() eventually locks a piece and resets velocity on spawn", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("O");
+    let safety = 0;
+    while (filledCount(game) === 0 && safety < 1000) {
+      game.fall(0.1);
+      safety++;
+    }
+    expect(filledCount(game)).toBe(4); // a locked O
+    expect(game.velocity).toBe(0); // reset on the next spawn
+    expect(game.offset).toBe(0);
+  });
+
+  it("soft drop boosts velocity in physics mode", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("T");
+    expect(game.velocity).toBe(0);
+    game.softDrop();
+    expect(game.velocity).toBeGreaterThan(0);
+  });
+});

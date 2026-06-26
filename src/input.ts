@@ -13,6 +13,7 @@ export interface InputActions {
   pause(): void;
   restart(): void;
   mute(): void;
+  togglePhysics(): void;
 }
 
 type RepeatDir = "left" | "right" | "down";
@@ -90,6 +91,10 @@ export function setupInput(actions: InputActions): () => void {
       case "M":
         actions.mute();
         break;
+      case "f":
+      case "F":
+        actions.togglePhysics();
+        break;
       default:
         return; // let other keys through without preventDefault
     }
@@ -127,6 +132,7 @@ export function setupTouchControls(actions: InputActions): () => void {
     hold: actions.hold,
     pause: actions.pause,
     restart: actions.restart,
+    physics: actions.togglePhysics,
   };
 
   const cleanups: Array<() => void> = [];
