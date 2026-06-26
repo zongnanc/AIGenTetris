@@ -183,7 +183,8 @@ h1 {
 }
 
 .tbtn[data-action="pause"],
-.tbtn[data-action="restart"] {
+.tbtn[data-action="restart"],
+.tbtn[data-action="physics"] {
   font-size: 0.95rem;
 }
 

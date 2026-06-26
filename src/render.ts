@@ -42,11 +42,17 @@ export function drawCell(
   ctx.strokeRect(x + 1, y + 1, CELL - 2, CELL - 2);
 }
 
-export function drawPiece(ctx: CanvasRenderingContext2D, piece: ActivePiece): void {
+// offsetRows shifts the piece down by a fractional row for smooth sub-cell
+// free-fall in Physics mode; defaults to 0 (blocky, grid-aligned) otherwise.
+export function drawPiece(
+  ctx: CanvasRenderingContext2D,
+  piece: ActivePiece,
+  offsetRows = 0,
+): void {
   const color = COLORS[colorOf(piece.type)];
   for (const [row, col] of cellsOf(piece)) {
     if (row >= 0) {
-      drawCell(ctx, row, col, color);
+      drawCell(ctx, row + offsetRows, col, color);
     }
   }
 }

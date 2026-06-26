@@ -36,6 +36,7 @@ const holdCtx = context(required<HTMLCanvasElement>("#hold"));
 const scoreEl = required<HTMLElement>("#score");
 const levelEl = required<HTMLElement>("#level");
 const linesEl = required<HTMLElement>("#lines");
+const modeEl = required<HTMLElement>("#btn-mode");
 
 const game = new Game();
 const sound = new SoundFX();
@@ -52,12 +53,13 @@ function render(): void {
   drawBoard(boardCtx, game.board.grid);
   if (game.status !== "over") {
     drawGhost(boardCtx, game.ghost());
-    drawPiece(boardCtx, game.active);
+    drawPiece(boardCtx, game.active, game.physics ? game.offset : 0);
   }
 
   scoreEl.textContent = String(game.score);
   levelEl.textContent = String(game.level);
   linesEl.textContent = String(game.lines);
+  modeEl.textContent = game.physics ? "Physics" : "Classic";
   drawPreview(nextCtx, game.next);
   drawPreview(holdCtx, game.hold);
 
@@ -84,7 +86,7 @@ const actions: InputActions = {
     }
   },
   softDrop: () => {
-    game.step();
+    game.softDrop();
     render();
   },
   hardDrop: () => {
@@ -120,6 +122,10 @@ const actions: InputActions = {
     render();
   },
   mute: () => sound.toggle(),
+  togglePhysics: () => {
+    game.togglePhysics();
+    render();
+  },
 };
 
 setupInput(actions);
@@ -130,16 +136,23 @@ let last = performance.now();
 let acc = 0;
 
 function loop(now: number): void {
-  acc += now - last;
+  const elapsed = now - last;
   last = now;
-  if (game.status === "playing") {
+  if (game.status !== "playing") {
+    acc = 0; // don't bank time while paused or game over
+  } else if (game.physics) {
+    // Per-frame free-fall integration. Cap dt so a backgrounded tab doesn't
+    // teleport the piece when it resumes.
+    game.fall(Math.min(elapsed / 1000, 0.05));
+    acc = 0;
+  } else {
+    // Classic fixed-timestep gravity; the interval shrinks with the level.
+    acc += elapsed;
     const interval = gravityInterval(game.level);
     while (acc >= interval) {
       game.step();
       acc -= interval;
     }
-  } else {
-    acc = 0; // don't bank time while paused or game over
   }
   render();
   requestAnimationFrame(loop);

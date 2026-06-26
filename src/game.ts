@@ -4,6 +4,12 @@
 import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
+  SOFT_DROP_VELOCITY,
+  gravityScaleForLevel,
+  nextVelocity,
+  pieceWidth,
+} from "./physics";
+import {
   ActivePiece,
   BagRandomizer,
   PieceType,
@@ -35,6 +41,11 @@ export class Game {
   level = START_LEVEL;
   status: GameStatus = "playing";
   events: GameEvents = {};
+  // Physics mode (free-fall) state. offset is the fractional row the piece has
+  // descended into the next cell (0..1); velocity is in rows/second.
+  physics = false;
+  offset = 0;
+  velocity = 0;
   private bag = new BagRandomizer();
 
   constructor() {
@@ -46,6 +57,8 @@ export class Game {
   // an occupied cell. Exposed for deterministic tests.
   spawnNext(type: PieceType): ActivePiece {
     this.active = spawn(type);
+    this.offset = 0;
+    this.velocity = 0; // a new piece starts at rest
     this.canHold = true;
     if (this.board.collides(this.active)) {
       this.status = "over";
@@ -120,6 +133,45 @@ export class Game {
     if (this.move(1, 0)) return false;
     this.lockAndNext();
     return true;
+  }
+
+  // Physics-mode tick (dt in seconds): integrate velocity and the sub-cell
+  // offset, dropping whole rows as the offset crosses cell boundaries. Velocity
+  // carries between frames (momentum) and is reset only on spawn.
+  fall(dt: number): void {
+    if (this.status !== "playing") return;
+    this.velocity = nextVelocity(
+      this.velocity,
+      pieceWidth(this.active),
+      gravityScaleForLevel(this.level),
+      dt,
+    );
+    this.offset += this.velocity * dt;
+    while (this.offset >= 1) {
+      if (this.move(1, 0)) {
+        this.offset -= 1;
+      } else {
+        this.lockAndNext();
+        this.offset = 0;
+        break;
+      }
+    }
+  }
+
+  // Soft drop: classic steps one row; physics adds downward speed.
+  softDrop(): void {
+    if (this.status !== "playing") return;
+    if (this.physics) {
+      this.velocity = Math.max(this.velocity, SOFT_DROP_VELOCITY);
+    } else {
+      this.step();
+    }
+  }
+
+  togglePhysics(): void {
+    this.physics = !this.physics;
+    this.offset = 0;
+    this.velocity = 0;
   }
 
   // Swap the active piece with the held one (or stash it if hold is empty).
