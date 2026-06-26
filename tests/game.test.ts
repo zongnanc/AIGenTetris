@@ -177,4 +177,26 @@ describe("physics mode", () => {
     game.softDrop();
     expect(game.velocity).toBeGreaterThan(0);
   });
+
+  it("rotating a fast piece broadside drastically cuts its speed", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("I"); // rotation 0 = horizontal (width 4)
+    game.rotate(1); // -> vertical (width 1); narrowing, no cut
+    game.velocity = 16; // falling fast
+    game.rotate(1); // -> horizontal (width 4); broadside to the air
+    expect(game.velocity).toBeCloseTo(16 * (1 / 4), 5);
+  });
+
+  it("the claw holds a new piece briefly before it falls", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("T");
+    expect(game.grabbed).toBe(true);
+    const startRow = game.active.row;
+    game.fall(0.1); // within the hold window
+    expect(game.active.row).toBe(startRow); // still held
+    game.fall(0.3); // exceeds the hold -> released
+    expect(game.grabbed).toBe(false);
+  });
 });

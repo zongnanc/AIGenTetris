@@ -4,6 +4,7 @@
 import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
+  GRAB_HOLD_TIME,
   SOFT_DROP_VELOCITY,
   gravityScaleForLevel,
   nextVelocity,
@@ -46,6 +47,9 @@ export class Game {
   physics = false;
   offset = 0;
   velocity = 0;
+  // The claw holds a freshly spawned piece for a moment before releasing it.
+  grabbed = false;
+  grabTimer = 0;
   private bag = new BagRandomizer();
 
   constructor() {
@@ -59,6 +63,8 @@ export class Game {
     this.active = spawn(type);
     this.offset = 0;
     this.velocity = 0; // a new piece starts at rest
+    this.grabbed = this.physics; // the claw grabs the new piece in physics mode
+    this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
     this.canHold = true;
     if (this.board.collides(this.active)) {
       this.status = "over";
@@ -91,6 +97,7 @@ export class Game {
   // Rotate with light horizontal wall kicks.
   rotate(dir: 1 | -1): boolean {
     if (this.status !== "playing") return false;
+    const oldWidth = pieceWidth(this.active);
     const rotation = nextRotation(this.active.rotation, dir);
     for (const dCol of WALL_KICKS) {
       const candidate: ActivePiece = {
@@ -100,6 +107,15 @@ export class Game {
       };
       if (!this.board.collides(candidate)) {
         this.active = candidate;
+        // In physics mode, turning the piece broadside to its fall suddenly
+        // presents more area to the air, drastically cutting its speed (e.g.
+        // a fast vertical I rotated flat). Only slows down, never speeds up.
+        if (this.physics) {
+          const newWidth = pieceWidth(this.active);
+          if (newWidth > oldWidth) {
+            this.velocity *= oldWidth / newWidth;
+          }
+        }
         return true;
       }
     }
@@ -140,6 +156,12 @@ export class Game {
   // carries between frames (momentum) and is reset only on spawn.
   fall(dt: number): void {
     if (this.status !== "playing") return;
+    if (this.grabbed) {
+      // Held by the claw — don't fall yet.
+      this.grabTimer -= dt;
+      if (this.grabTimer <= 0) this.grabbed = false;
+      return;
+    }
     this.velocity = nextVelocity(
       this.velocity,
       pieceWidth(this.active),
@@ -172,6 +194,8 @@ export class Game {
     this.physics = !this.physics;
     this.offset = 0;
     this.velocity = 0;
+    this.grabbed = this.physics; // claw grabs the current piece when entering physics
+    this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
   }
 
   // Swap the active piece with the held one (or stash it if hold is empty).
