@@ -13,7 +13,9 @@ import { START_LEVEL } from "./constants";
 import { ActivePiece, SHAPES } from "./tetromino";
 
 export const GRAVITY = 34; // rows / s^2
-export const DRAG = 2.2; // air resistance per unit width
+export const DRAG = 2.2; // base air resistance per unit width (used at high levels)
+export const BEGINNER_DRAG = 2.6; // extra "thick air" drag at the starting level
+export const DRAG_FALLOFF = 0.5; // how fast the beginner drag thins out per level
 export const MAX_VELOCITY = 40; // rows / s safety cap
 export const SOFT_DROP_VELOCITY = 25; // rows / s floor applied on soft drop
 export const GRAB_HOLD_BASE = 0.5; // claw hold at the starting level (seconds)
@@ -38,14 +40,22 @@ export function grabHoldForLevel(level: number): number {
   return Math.max(GRAB_HOLD_MIN, GRAB_HOLD_BASE - (level - START_LEVEL) * GRAB_HOLD_STEP);
 }
 
+// Low levels add extra "thick air" drag so pieces fall gently for beginners;
+// it thins out each level down to the base DRAG, so high levels stay fast.
+export function dragForLevel(level: number): number {
+  return DRAG + Math.max(0, BEGINNER_DRAG - (level - START_LEVEL) * DRAG_FALLOFF);
+}
+
 // Next vertical velocity (rows/s). Depends on the previous velocity (momentum).
+// drag defaults to the base value; pass dragForLevel(level) for the ramp.
 export function nextVelocity(
   v: number,
   width: number,
   gravityScale: number,
   dt: number,
+  drag = DRAG,
 ): number {
-  const accel = GRAVITY * gravityScale - DRAG * width * v;
+  const accel = GRAVITY * gravityScale - drag * width * v;
   const next = v + accel * dt;
   return Math.min(Math.max(next, 0), MAX_VELOCITY);
 }

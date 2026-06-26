@@ -6,6 +6,7 @@ import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
   LOCK_DELAY,
   SOFT_DROP_VELOCITY,
+  dragForLevel,
   grabHoldForLevel,
   gravityScaleForLevel,
   nextVelocity,
@@ -164,6 +165,7 @@ export class Game {
       pieceWidth(this.active),
       gravityScaleForLevel(this.level),
       dt,
+      dragForLevel(this.level),
     );
     this.offset += this.velocity * dt;
 
