@@ -3,9 +3,11 @@ import {
   pieceWidth,
   nextVelocity,
   gravityScaleForLevel,
+  grabHoldForLevel,
   GRAVITY,
   DRAG,
   MAX_VELOCITY,
+  GRAB_HOLD_MIN,
 } from "../src/physics";
 import type { ActivePiece, PieceType, Rotation } from "../src/tetromino";
 
@@ -61,5 +63,15 @@ describe("gravityScaleForLevel", () => {
   it("is 1 at the start level and grows with level", () => {
     expect(gravityScaleForLevel(1)).toBeCloseTo(1, 5);
     expect(gravityScaleForLevel(5)).toBeGreaterThan(gravityScaleForLevel(2));
+  });
+});
+
+describe("grabHoldForLevel", () => {
+  it("shrinks as the level rises", () => {
+    expect(grabHoldForLevel(3)).toBeLessThan(grabHoldForLevel(1));
+  });
+
+  it("never drops below the floor", () => {
+    expect(grabHoldForLevel(100)).toBeCloseTo(GRAB_HOLD_MIN, 5);
   });
 });

@@ -4,9 +4,9 @@
 import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
-  GRAB_HOLD_TIME,
   LOCK_DELAY,
   SOFT_DROP_VELOCITY,
+  grabHoldForLevel,
   gravityScaleForLevel,
   nextVelocity,
   pieceWidth,
@@ -67,7 +67,7 @@ export class Game {
     this.offset = 0;
     this.velocity = 0; // a new piece starts at rest
     this.grabbed = this.physics; // the claw grabs the new piece in physics mode
-    this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
+    this.grabTimer = this.physics ? grabHoldForLevel(this.level) : 0;
     this.lockTimer = 0;
     this.canHold = true;
     if (this.board.collides(this.active)) {
@@ -208,7 +208,7 @@ export class Game {
     this.offset = 0;
     this.velocity = 0;
     this.grabbed = this.physics; // claw grabs the current piece when entering physics
-    this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
+    this.grabTimer = this.physics ? grabHoldForLevel(this.level) : 0;
     this.lockTimer = 0;
   }
 

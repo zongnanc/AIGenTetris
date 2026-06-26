@@ -211,9 +211,24 @@ describe("physics mode", () => {
     game.spawnNext("T");
     expect(game.grabbed).toBe(true);
     const startRow = game.active.row;
-    game.fall(0.1); // within the hold window
+    game.fall(0.05); // within the hold window
     expect(game.active.row).toBe(startRow); // still held
-    game.fall(0.3); // exceeds the hold -> released
+    game.fall(1.0); // exceeds any level's hold -> released
     expect(game.grabbed).toBe(false);
+  });
+
+  it("drops sooner at higher levels (shorter claw hold)", () => {
+    const low = new Game();
+    low.togglePhysics();
+    low.level = 1;
+    low.spawnNext("T");
+    const highLevelHold = (() => {
+      const g = new Game();
+      g.togglePhysics();
+      g.level = 8;
+      g.spawnNext("T");
+      return g.grabTimer;
+    })();
+    expect(highLevelHold).toBeLessThan(low.grabTimer);
   });
 });
