@@ -179,14 +179,19 @@ describe("physics mode", () => {
     expect(game.velocity).toBeGreaterThan(0);
   });
 
-  it("rotating a fast piece broadside drastically cuts its speed", () => {
+  it("rotating broadside slows the piece gradually via drag, not instantly", () => {
     const game = new Game();
     game.togglePhysics();
     game.spawnNext("I"); // rotation 0 = horizontal (width 4)
-    game.rotate(1); // -> vertical (width 1); narrowing, no cut
+    game.rotate(1); // -> vertical (width 1)
+    game.grabbed = false; // release the claw hold so it falls
     game.velocity = 16; // falling fast
     game.rotate(1); // -> horizontal (width 4); broadside to the air
-    expect(game.velocity).toBeCloseTo(16 * (1 / 4), 5);
+    expect(game.velocity).toBe(16); // not cut instantly
+
+    // A handful of frames of drag brake it well below the entry speed.
+    for (let i = 0; i < 10; i++) game.fall(0.016);
+    expect(game.velocity).toBeLessThan(8);
   });
 
   it("a resting piece sits flush (no overlap/breach) and locks after the delay", () => {
