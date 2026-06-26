@@ -91,8 +91,10 @@ const actions: InputActions = {
     }
   },
   softDrop: () => {
-    game.softDrop();
-    render();
+    if (game.softDrop()) {
+      sound.softDrop();
+      render();
+    }
   },
   hardDrop: () => {
     if (game.hardDrop()) {

@@ -59,6 +59,11 @@ export class SoundFX {
     this.tone(110, 0.1, "sawtooth");
   }
 
+  // Short, soft tick. Held soft-drop auto-repeats, so these stack into a rattle.
+  softDrop(): void {
+    this.tone(150, 0.035, "triangle", 0.04);
+  }
+
   // Ascending arpeggio — more notes for more lines cleared.
   lineClear(lines: number): void {
     for (let i = 0; i < lines; i++) {
