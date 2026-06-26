@@ -8,7 +8,6 @@ import {
   GRAVITY,
   DRAG,
   MAX_VELOCITY,
-  MAX_DECEL,
   GRAB_HOLD_MIN,
 } from "../src/physics";
 import type { ActivePiece, PieceType, Rotation } from "../src/tetromino";
@@ -56,11 +55,21 @@ describe("nextVelocity", () => {
     expect(nextVelocity(MAX_VELOCITY, 1, 5, 1)).toBeLessThanOrEqual(MAX_VELOCITY);
   });
 
-  it("caps deceleration so braking is gradual", () => {
-    // Far above terminal (width 4): the drop is limited to MAX_DECEL * dt.
-    const before = 20;
-    const after = nextVelocity(before, 4, 1, 0.1);
-    expect(before - after).toBeCloseTo(MAX_DECEL * 0.1, 5);
+  it("softens braking so overspeed eases off rather than snapping", () => {
+    // Above terminal, the drop per step is gentler than full drag would give.
+    const v = 20;
+    const dropSoft = v - nextVelocity(v, 4, 1, 0.1);
+    const dropFull = (DRAG * 4 * v - GRAVITY * 1) * 0.1; // unsoftened decel * dt
+    expect(dropSoft).toBeGreaterThan(0);
+    expect(dropSoft).toBeLessThan(dropFull);
+  });
+
+  it("eases overspeed all the way back to terminal (no permanent boost)", () => {
+    const width = 1;
+    const terminal = (GRAVITY * 1) / (DRAG * width);
+    let v = 25; // soft-drop-style overspeed
+    for (let i = 0; i < 2000; i++) v = nextVelocity(v, width, 1, 0.016);
+    expect(v).toBeCloseTo(terminal, 1);
   });
 
   it("clamps at zero — no upward drift", () => {
