@@ -13,6 +13,7 @@ import {
 } from "./render";
 import { InputActions, setupInput, setupTouchControls } from "./input";
 import { SoundFX } from "./sound";
+import { Claw } from "./claw";
 
 function required<T extends Element>(selector: string): T {
   const el = document.querySelector<T>(selector);
@@ -40,6 +41,7 @@ const modeEl = required<HTMLElement>("#btn-mode");
 
 const game = new Game();
 const sound = new SoundFX();
+const claw = new Claw();
 
 // Game-driven sounds (locking, line clears, game over) come through events so
 // game.ts stays free of audio. Input-driven sounds are played in the handlers.
@@ -54,6 +56,9 @@ function render(): void {
   if (game.status !== "over") {
     drawGhost(boardCtx, game.ghost());
     drawPiece(boardCtx, game.active, game.physics ? game.offset : 0);
+    if (game.physics) {
+      claw.draw(boardCtx, game.active, game.grabbed);
+    }
   }
 
   scoreEl.textContent = String(game.score);
@@ -143,7 +148,9 @@ function loop(now: number): void {
   } else if (game.physics) {
     // Per-frame free-fall integration. Cap dt so a backgrounded tab doesn't
     // teleport the piece when it resumes.
-    game.fall(Math.min(elapsed / 1000, 0.05));
+    const dt = Math.min(elapsed / 1000, 0.05);
+    game.fall(dt);
+    claw.update(dt, game.grabbed);
     acc = 0;
   } else {
     // Classic fixed-timestep gravity; the interval shrinks with the level.

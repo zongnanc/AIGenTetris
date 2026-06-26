@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Game } from "../src/game";
 import { COLS, EMPTY } from "../src/constants";
 import { cellsOf, colorOf } from "../src/tetromino";
+import { LOCK_DELAY } from "../src/physics";
 
 // Generous upper bound on gravity steps to reach the floor.
 const ROWS_GUARD = 40;
@@ -176,5 +177,43 @@ describe("physics mode", () => {
     expect(game.velocity).toBe(0);
     game.softDrop();
     expect(game.velocity).toBeGreaterThan(0);
+  });
+
+  it("rotating a fast piece broadside drastically cuts its speed", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("I"); // rotation 0 = horizontal (width 4)
+    game.rotate(1); // -> vertical (width 1); narrowing, no cut
+    game.velocity = 16; // falling fast
+    game.rotate(1); // -> horizontal (width 4); broadside to the air
+    expect(game.velocity).toBeCloseTo(16 * (1 / 4), 5);
+  });
+
+  it("a resting piece sits flush (no overlap/breach) and locks after the delay", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("O");
+    game.grabbed = false; // skip the claw hold for the test
+    game.active.row = 18; // O resting on the floor (cells in rows 18-19)
+    game.velocity = 30; // moving fast into the floor
+
+    game.fall(0.05); // resting: should sit flush and not lock yet
+    expect(game.offset).toBe(0); // no sub-cell sink-in past the floor
+    expect(game.board.grid.flat().every((v) => v === EMPTY)).toBe(true);
+
+    game.fall(LOCK_DELAY); // exceed the lock delay
+    expect(game.board.grid.flat().some((v) => v !== EMPTY)).toBe(true);
+  });
+
+  it("the claw holds a new piece briefly before it falls", () => {
+    const game = new Game();
+    game.togglePhysics();
+    game.spawnNext("T");
+    expect(game.grabbed).toBe(true);
+    const startRow = game.active.row;
+    game.fall(0.1); // within the hold window
+    expect(game.active.row).toBe(startRow); // still held
+    game.fall(0.3); // exceeds the hold -> released
+    expect(game.grabbed).toBe(false);
   });
 });
