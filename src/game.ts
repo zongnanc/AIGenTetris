@@ -189,13 +189,15 @@ export class Game {
   }
 
   // Soft drop: classic steps one row; physics adds downward speed.
-  softDrop(): void {
-    if (this.status !== "playing") return;
+  // Returns false if the game isn't actively playing (nothing happened).
+  softDrop(): boolean {
+    if (this.status !== "playing") return false;
     if (this.physics) {
       this.velocity = Math.max(this.velocity, SOFT_DROP_VELOCITY);
     } else {
       this.step();
     }
+    return true;
   }
 
   togglePhysics(): void {
