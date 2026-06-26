@@ -179,14 +179,19 @@ describe("physics mode", () => {
     expect(game.velocity).toBeGreaterThan(0);
   });
 
-  it("rotating a fast piece broadside drastically cuts its speed", () => {
+  it("rotating broadside slows the piece gradually via drag, not instantly", () => {
     const game = new Game();
     game.togglePhysics();
     game.spawnNext("I"); // rotation 0 = horizontal (width 4)
-    game.rotate(1); // -> vertical (width 1); narrowing, no cut
+    game.rotate(1); // -> vertical (width 1)
+    game.grabbed = false; // release the claw hold so it falls
     game.velocity = 16; // falling fast
     game.rotate(1); // -> horizontal (width 4); broadside to the air
-    expect(game.velocity).toBeCloseTo(16 * (1 / 4), 5);
+    expect(game.velocity).toBe(16); // not cut instantly
+
+    // A handful of frames of drag brake it well below the entry speed.
+    for (let i = 0; i < 10; i++) game.fall(0.016);
+    expect(game.velocity).toBeLessThan(8);
   });
 
   it("a resting piece sits flush (no overlap/breach) and locks after the delay", () => {
@@ -211,9 +216,24 @@ describe("physics mode", () => {
     game.spawnNext("T");
     expect(game.grabbed).toBe(true);
     const startRow = game.active.row;
-    game.fall(0.1); // within the hold window
+    game.fall(0.05); // within the hold window
     expect(game.active.row).toBe(startRow); // still held
-    game.fall(0.3); // exceeds the hold -> released
+    game.fall(1.0); // exceeds any level's hold -> released
     expect(game.grabbed).toBe(false);
+  });
+
+  it("drops sooner at higher levels (shorter claw hold)", () => {
+    const low = new Game();
+    low.togglePhysics();
+    low.level = 1;
+    low.spawnNext("T");
+    const highLevelHold = (() => {
+      const g = new Game();
+      g.togglePhysics();
+      g.level = 8;
+      g.spawnNext("T");
+      return g.grabTimer;
+    })();
+    expect(highLevelHold).toBeLessThan(low.grabTimer);
   });
 });

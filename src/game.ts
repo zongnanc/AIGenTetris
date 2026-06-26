@@ -4,9 +4,9 @@
 import { Board } from "./board";
 import { LINE_SCORES, LINES_PER_LEVEL, START_LEVEL } from "./constants";
 import {
-  GRAB_HOLD_TIME,
   LOCK_DELAY,
   SOFT_DROP_VELOCITY,
+  grabHoldForLevel,
   gravityScaleForLevel,
   nextVelocity,
   pieceWidth,
@@ -67,7 +67,7 @@ export class Game {
     this.offset = 0;
     this.velocity = 0; // a new piece starts at rest
     this.grabbed = this.physics; // the claw grabs the new piece in physics mode
-    this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
+    this.grabTimer = this.physics ? grabHoldForLevel(this.level) : 0;
     this.lockTimer = 0;
     this.canHold = true;
     if (this.board.collides(this.active)) {
@@ -98,10 +98,12 @@ export class Game {
     return true;
   }
 
-  // Rotate with light horizontal wall kicks.
+  // Rotate with light horizontal wall kicks. In physics mode, turning a piece
+  // broadside doesn't cut speed instantly — its width grows, so drag rises and
+  // the velocity bleeds off gradually toward the lower terminal velocity over
+  // the next frames (a smooth brake rather than a jarring snap).
   rotate(dir: 1 | -1): boolean {
     if (this.status !== "playing") return false;
-    const oldWidth = pieceWidth(this.active);
     const rotation = nextRotation(this.active.rotation, dir);
     for (const dCol of WALL_KICKS) {
       const candidate: ActivePiece = {
@@ -111,15 +113,6 @@ export class Game {
       };
       if (!this.board.collides(candidate)) {
         this.active = candidate;
-        // In physics mode, turning the piece broadside to its fall suddenly
-        // presents more area to the air, drastically cutting its speed (e.g.
-        // a fast vertical I rotated flat). Only slows down, never speeds up.
-        if (this.physics) {
-          const newWidth = pieceWidth(this.active);
-          if (newWidth > oldWidth) {
-            this.velocity *= oldWidth / newWidth;
-          }
-        }
         return true;
       }
     }
@@ -208,7 +201,7 @@ export class Game {
     this.offset = 0;
     this.velocity = 0;
     this.grabbed = this.physics; // claw grabs the current piece when entering physics
-    this.grabTimer = this.physics ? GRAB_HOLD_TIME : 0;
+    this.grabTimer = this.physics ? grabHoldForLevel(this.level) : 0;
     this.lockTimer = 0;
   }
 
